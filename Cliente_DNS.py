@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 import requests
+import subprocess
 
 class DNSClientApp:
     def __init__(self, root):
@@ -26,9 +27,13 @@ class DNSClientApp:
         )
         self.record_type_menu.grid(row=1, column=1, sticky=(tk.W, tk.E))
 
-        # Botão para consulta
-        self.query_button = ttk.Button(self.frame, text="Consultar", command=self.query_dns)
-        self.query_button.grid(row=2, column=0, columnspan=3, pady=10)
+        # Botão para consulta no proprio sistema
+        self.query_button = ttk.Button(self.frame, text="Consultar localmente", command=self.query_dns)
+        self.query_button.grid(row=2, column=0, pady=10)
+
+        # Botão para consulta externa
+        self.query_button = ttk.Button(self.frame, text="Consultar externamente", command=self.dig_dns)
+        self.query_button.grid(row=2, column=1, columnspan=3, pady=10)
 
         # TextArea para a saída
         self.result_text = tk.Text(self.frame, wrap="word", height=15, width=60)
@@ -39,7 +44,7 @@ class DNSClientApp:
         for child in self.frame.winfo_children():
             child.grid_configure(padx=5, pady=5)
 
-    # Faz a consulta DNS e exibe o resultado na área de texto
+    # Faz a consulta DNS e exibe o resultado na área de texto (utilizando requests)
     def query_dns(self):
         # Domínio e tipo
         domain = self.domain_entry.get().strip()
@@ -61,7 +66,7 @@ class DNSClientApp:
 
             # Prepara o cabeçalho da resposta
             header = (
-                f"Consulta DNS:\n"
+                f"Consulta DNS (utilizando requests):\n"
                 f"- Domínio: {domain}\n"
                 f"- Tipo de Registro: {record_type}\n\n"
                 f"Resultados:\n"
@@ -82,6 +87,46 @@ class DNSClientApp:
 
         except requests.RequestException as e:
             self.display_result(f"Erro ao consultar DNS: {e}")
+
+    # faz consulta dns e exibe no textbox (utilizando dig)
+    def dig_dns(self):
+        # Obtém o domínio e o tipo de registro da interface
+        domain = self.domain_entry.get().strip()
+        record_type = self.record_type.get()
+
+        # Se não tiver domínio, exibe mensagem de erro
+        if not domain:
+            self.display_result("Por favor, insira um domínio...")
+            return
+
+        try:
+            # Comando do dig
+            comando = ["dig", "+short", domain, record_type]
+            resultado = subprocess.run(comando, capture_output=True, text=True)
+
+            # Verifica se há resultado
+            if resultado.stdout.strip():
+                registros = resultado.stdout.strip().split("\n")
+                header = (
+                    f"Consulta DNS (usando dig):\n"
+                    f"- Domínio: {domain}\n"
+                    f"- Tipo de Registro: {record_type}\n\n"
+                    f"Resultados:\n"
+                )
+                # Formata os registros encontrados
+                registros_formatados = "\n".join([f"  {registro}" for registro in registros])
+                self.display_result(header + registros_formatados)
+            else:
+                # Sem registros
+                self.display_result(f"Nenhum registro encontrado para {domain} ({record_type}) utilizando dig.")
+
+        except FileNotFoundError:
+            # Se o comando `dig` não estiver instalado
+            self.display_result("Erro: O comando 'dig' não está disponível no sistema.")
+        except Exception as e:
+            # Outros erros
+            self.display_result(f"Erro ao executar o comando 'dig': {e}")
+
 
     # Exibe uma mensagem na TextArea
     def display_result(self, message):
