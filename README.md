@@ -50,7 +50,7 @@ Siga os passos abaixo para instalar e executar o programa:
 
 1. Insira o domínio no campo de texto (ex.: `example.com`).
 2. Escolha o tipo de registro DNS no menu suspenso (ex.: `A`, `MX`).
-3. Clique em "Consultar" para visualizar os resultados.
+3. Clique em "Consultar localmente" ou "Consultar externamente" para visualizar os resultados.
 
 ## Observações
 
